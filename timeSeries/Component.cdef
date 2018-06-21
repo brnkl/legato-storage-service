@@ -1,8 +1,8 @@
 cflags:
 {
   -std=c99
-  -I$BRNKL_ROOT/apps/util
-  -I$BRNKL_ROOT/apps/storageService/fileStorage
+  -I$CURDIR/../../util
+  -I$CURDIR/../fileStorage
 }
 
 provides:
@@ -17,12 +17,12 @@ requires:
 {
   component:
   {
-    fileStorage
+    $CURDIR/../fileStorage
   }
 }
 
 sources:
 {
   timeSeries.c
-  $BRNKL_ROOT/apps/util/util.c
+  $CURDIR/../../util/util.c
 }
