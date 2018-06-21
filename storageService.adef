@@ -1,0 +1,28 @@
+sandboxed: false
+version: 2.5.0
+start: auto
+
+executables:
+{
+  storageService = ( timeSeries )
+}
+
+
+processes:
+{
+  maxFileBytes: 30000K
+  envVars:
+  {
+    le_log_level = debug
+  }
+  run:
+  {
+     ( storageService )
+  }
+  faultAction: restartApp
+}
+
+extern:
+{
+  storageService.timeSeries.brnkl_series
+}

@@ -1,0 +1,11 @@
+cflags:
+{
+  -std=c99
+  -I$BRNKL_ROOT/apps/util
+}
+
+sources:
+{
+  fileStorage.c
+  $BRNKL_ROOT/apps/util/util.c
+}

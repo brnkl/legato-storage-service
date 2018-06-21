@@ -1,0 +1,28 @@
+cflags:
+{
+  -std=c99
+  -I$BRNKL_ROOT/apps/util
+  -I$BRNKL_ROOT/apps/storageService/fileStorage
+}
+
+provides:
+{
+  api:
+  {
+    $CURDIR/../brnkl_series.api
+  }
+}
+
+requires:
+{
+  component:
+  {
+    fileStorage
+  }
+}
+
+sources:
+{
+  timeSeries.c
+  $BRNKL_ROOT/apps/util/util.c
+}
