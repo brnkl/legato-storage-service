@@ -6,13 +6,15 @@
 le_result_t brnkl_series_recordInt(const char* key,
                                    int32_t val,
                                    uint64_t timestamp) {
-  return storage_recordInt(key, val, timestamp);
+  // return storage_recordInt(key, val, timestamp);
+  return LE_OK;
 }
 
 le_result_t brnkl_series_recordDouble(const char* key,
                                       double val,
                                       uint64_t timestamp) {
-  return storage_recordDouble(key, val, timestamp);
+  // return storage_recordDouble(key, val, timestamp);
+  return LE_OK;
 }
 
 le_result_t brnkl_series_recordString(char* key,
