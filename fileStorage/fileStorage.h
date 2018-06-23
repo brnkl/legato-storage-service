@@ -4,6 +4,8 @@
 #include "legato.h"
 #include "interfaces.h"
 
+typedef enum { INT = 0, DOUBLE, STRING } StorageType;
+
 LE_SHARED le_result_t storage_recordInt(const char* key,
                                         int32_t val,
                                         uint64_t timestamp);
@@ -13,25 +15,22 @@ LE_SHARED le_result_t storage_recordDouble(const char* key,
                                            uint64_t timestamp);
 
 LE_SHARED le_result_t storage_recordString(const char* key,
-                                           char* val,
+                                           const char* val,
                                            uint64_t timestamp);
 
-LE_SHARED le_result_t storage_getInt(char* key,
+LE_SHARED le_result_t storage_getInt(const char* key,
                                      int* val,
-                                     size_t* size,
                                      uint64_t* timestamp,
-                                     size_t* tSize);
+                                     size_t* size);
 
-LE_SHARED le_result_t storage_getDouble(char* key,
+LE_SHARED le_result_t storage_getDouble(const char* key,
                                         double* val,
-                                        size_t* size,
                                         uint64_t* timestamp,
-                                        size_t* tSize);
+                                        size_t* size);
 
-LE_SHARED le_result_t storage_getString(char* key,
-                                        char** val,
-                                        size_t* size,
+LE_SHARED le_result_t storage_getString(const char* key,
+                                        char* val[],
                                         uint64_t* timestamp,
-                                        size_t* tSize);
+                                        size_t* size);
 
 #endif

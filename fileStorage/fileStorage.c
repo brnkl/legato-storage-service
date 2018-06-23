@@ -1,6 +1,7 @@
 #include "legato.h"
 #include "util.h"
 #include <sys/mman.h>
+#include "fileStorage.h"
 #define MAX_STR_SIZE 2048
 
 // TODO write a helper to make
@@ -11,7 +12,9 @@ static const char* SD_MNT_PATH = "/mnt/userrw/sd/";
 static const char* FLASH_STORAGE_PATH = "/mnt/flash/storage/";
 static const char* SD_STORAGE_PATH = "/mnt/userrw/sd/storage/";
 static const char* SERIES_PATH = "%sseries";
-static const char* SERIES_FILENAME = "%s/%s.series";
+// TODO fill in the third %s as a type
+// such that we know what type it is when we grab it
+static const char* SERIES_FILENAME = "%s/%s.%s.series";
 
 typedef struct { bool hasSdCard; } StorageState;
 typedef struct {
@@ -109,7 +112,9 @@ le_result_t storage_recordDouble(const char* key,
   return storage_record(key, (void*)&val, timestamp, formatDouble);
 }
 
-le_result_t storage_recordString(char* key, char* val, uint64_t timestamp) {
+le_result_t storage_recordString(const char* key,
+                                 const char* val,
+                                 uint64_t timestamp) {
   return storage_record(key, (void*)val, timestamp, formatString);
 }
 
@@ -134,7 +139,7 @@ void* derefString(void* value, int i) {
 // if size is larger than the number of
 // stored records, all records are read
 // and the size is adjusted
-le_result_t storage_get(char* key,
+le_result_t storage_get(const char* key,
                         void* val,
                         uint64_t* timestamp,
                         size_t* size,
@@ -182,6 +187,7 @@ le_result_t storage_get(char* key,
     }
     buf.st_size--;
   }
+  close(fd);
   ftruncate(fd, buf.st_size);
   if (*size > i) {
     *size = i;
@@ -194,40 +200,40 @@ ioError:
   LE_ERROR("Failed on file descriptor");
   return LE_IO_ERROR;
 }
-le_result_t storage_getInt(char* key,
+le_result_t storage_getInt(const char* key,
                            int* val,
-                           size_t* size,
                            uint64_t* timestamp,
-                           size_t* tSize) {
+                           size_t* size) {
   GetCallbacks c = {.scan = parseIntRecord, .deref = derefInt};
-  le_result_t r = storage_get(key, (void*)val, timestamp, size, &c);
-  *tSize = *size;
-  return r;
+  return storage_get(key, (void*)val, timestamp, size, &c);
 }
 
-le_result_t storage_getDouble(char* key,
+le_result_t storage_getDouble(const char* key,
                               double* val,
-                              size_t* size,
                               uint64_t* timestamp,
-                              size_t* tSize) {
+                              size_t* size) {
   GetCallbacks c = {.scan = parseDoubleRecord, .deref = derefDouble};
-  le_result_t r = storage_get(key, (void*)val, timestamp, size, &c);
-  *tSize = *size;
-  return r;
+  return storage_get(key, (void*)val, timestamp, size, &c);
 }
 
 // TODO figure out why this seg faults
 // (it might be related to the pointer I
 // passed when testing)
-le_result_t storage_getString(char* key,
+le_result_t storage_getString(const char* key,
                               char* val[],
-                              size_t* size,
                               uint64_t* timestamp,
-                              size_t* tSize) {
+                              size_t* size) {
   GetCallbacks c = {.scan = parseStringRecord, .deref = derefString};
-  le_result_t r = storage_get(key, (void*)val, timestamp, size, &c);
-  *tSize = *size;
-  return r;
+  return storage_get(key, (void*)val, timestamp, size, &c);
+}
+
+// Note that we need to perform a scan here
+// to avoid the risk of "zombie files"
+le_result_t storage_getAllKeys(char* key,
+                               char* val[],
+                               StorageType* type,
+                               size_t* size) {
+  return LE_OK;
 }
 
 COMPONENT_INIT {
