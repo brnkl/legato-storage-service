@@ -1,5 +1,6 @@
 DEFINE N_MAX_RECORDS = 1000;
 DEFINE MAX_KEY_SIZE = 500;
+DEFINE MAX_STR_SIZE = 2048;
 
 FUNCTION le_result_t recordInt(
   string key[MAX_KEY_SIZE] IN,
@@ -11,4 +12,28 @@ FUNCTION le_result_t recordDouble(
   string key[MAX_KEY_SIZE] IN,
   double value IN,
   uint64 timestamp IN
+);
+
+FUNCTION le_result_t recordString(
+  string key[MAX_KEY_SIZE] IN,
+  string value[MAX_STR_SIZE] IN,
+  uint64 timestamp IN
+);
+
+FUNCTION le_result_t getInt(
+  string key[MAX_KEY_SIZE] IN,
+  int32 value [N_MAX_RECORDS] OUT,
+  uint64 timestamps [N_MAX_RECORDS] OUT
+);
+
+FUNCTION le_result_t getDouble(
+  string key[MAX_KEY_SIZE] IN,
+  double value [N_MAX_RECORDS] OUT,
+  uint64 timestamps [N_MAX_RECORDS] OUT
+);
+
+FUNCTION le_result_t clear(
+  string key[MAX_KEY_SIZE] IN,
+  int32 clearAll IN,
+  int32 size OUT
 );
