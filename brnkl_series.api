@@ -35,5 +35,5 @@ FUNCTION le_result_t getDouble(
 FUNCTION le_result_t clear(
   string key[MAX_KEY_SIZE] IN,
   int32 clearAll IN,
-  int32 size OUT
+  uint32 size OUT
 );

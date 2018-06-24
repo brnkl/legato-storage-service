@@ -47,7 +47,7 @@ le_result_t brnkl_series_getString(const char* key,
 
 le_result_t brnkl_series_clear(const char* key,
                                int32_t clearAll,
-                               int32_t* size) {
+                               uint32_t* size) {
   return LE_OK;
 }
 
