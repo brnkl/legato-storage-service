@@ -2,7 +2,6 @@
 #include "util.h"
 #include <sys/mman.h>
 #include "fileStorage.h"
-#define MAX_STR_SIZE 2048
 
 // TODO write a helper to make
 // sure all the directories we need are ready
@@ -20,6 +19,7 @@ typedef struct { bool hasSdCard; } StorageState;
 typedef struct {
   int (*scan)(char* recordLine, void* value, uint64_t* timestamp);
   void* (*deref)(void* value, int i);
+  StorageType type;
 } GetCallbacks;
 
 StorageState state = {.hasSdCard = false};
@@ -36,14 +36,37 @@ static bool mountSdCard() {
   return true;
 }
 
-void getSeriesPath(const char* key, char* res) {
-  char dir[MAX_STR_SIZE];
+void getSeriesDir(char* res) {
   const char* storageLocation =
       state.hasSdCard ? SD_STORAGE_PATH : FLASH_STORAGE_PATH;
   // build the dir e.g /mnt/flash/userrw/sd/storage/series
-  snprintf(dir, MAX_STR_SIZE, SERIES_PATH, storageLocation);
-  // build the path e.g /mnt/flash/userrw/sd/storage/series/pressure1.series
-  snprintf(res, MAX_STR_SIZE, SERIES_FILENAME, dir, key);
+  snprintf(res, MAX_STR_SIZE, SERIES_PATH, storageLocation);
+}
+
+void getSeriesPath(const char* key, char* res, StorageType type) {
+  char dir[MAX_STR_SIZE];
+  char* typestr;
+  switch(type) {
+    case INT:
+      typestr = "int";
+    break;
+    case DOUBLE:
+      typestr = "double";
+    break;
+    case STRING:
+      typestr = "string";
+    break;
+  }
+  getSeriesDir(dir);
+  // build the path e.g /mnt/flash/userrw/sd/storage/series/pressure1.double.series
+  snprintf(res, MAX_STR_SIZE, SERIES_FILENAME, dir, key, typestr);
+}
+
+StorageType stringToStorageType(char* typestr) {
+  if(!strcmp(typestr, "int")) return INT;
+  if(!strcmp(typestr, "double")) return DOUBLE;
+  if(!strcmp(typestr, "string")) return STRING;
+  return INT;
 }
 
 // TODO add a space check with some type
@@ -51,11 +74,12 @@ void getSeriesPath(const char* key, char* res) {
 le_result_t storage_record(const char* key,
                            void* value,
                            uint64_t timestamp,
+                           StorageType type,
                            int (*formatCallback)(void* input,
                                                  char* output,
                                                  size_t n)) {
   char seriesPath[MAX_STR_SIZE];
-  getSeriesPath(key, seriesPath);
+  getSeriesPath(key, seriesPath, type);
 
   char formattedVal[MAX_STR_SIZE];
   formatCallback(value, formattedVal, MAX_STR_SIZE);
@@ -103,19 +127,19 @@ int parseStringRecord(char* recordLine, void* value, uint64_t* timestamp) {
 le_result_t storage_recordInt(const char* key,
                               int32_t val,
                               uint64_t timestamp) {
-  return storage_record(key, (void*)&val, timestamp, formatInt);
+  return storage_record(key, (void*)&val, timestamp, INT, formatInt);
 }
 
 le_result_t storage_recordDouble(const char* key,
                                  double val,
                                  uint64_t timestamp) {
-  return storage_record(key, (void*)&val, timestamp, formatDouble);
+  return storage_record(key, (void*)&val, timestamp, DOUBLE, formatDouble);
 }
 
 le_result_t storage_recordString(const char* key,
                                  const char* val,
                                  uint64_t timestamp) {
-  return storage_record(key, (void*)val, timestamp, formatString);
+  return storage_record(key, (void*)val, timestamp, STRING, formatString);
 }
 
 void* derefInt(void* value, int i) {
@@ -145,7 +169,7 @@ le_result_t storage_get(const char* key,
                         size_t* size,
                         GetCallbacks* callbacks) {
   char seriesPath[MAX_STR_SIZE];
-  getSeriesPath(key, seriesPath);
+  getSeriesPath(key, seriesPath, callbacks->type);
   int fd = open(seriesPath, O_RDWR);
 
   if (fd < 0) {
@@ -200,11 +224,12 @@ ioError:
   LE_ERROR("Failed on file descriptor");
   return LE_IO_ERROR;
 }
+
 le_result_t storage_getInt(const char* key,
                            int* val,
                            uint64_t* timestamp,
                            size_t* size) {
-  GetCallbacks c = {.scan = parseIntRecord, .deref = derefInt};
+  GetCallbacks c = {.scan = parseIntRecord, .deref = derefInt, .type = INT};
   return storage_get(key, (void*)val, timestamp, size, &c);
 }
 
@@ -212,7 +237,7 @@ le_result_t storage_getDouble(const char* key,
                               double* val,
                               uint64_t* timestamp,
                               size_t* size) {
-  GetCallbacks c = {.scan = parseDoubleRecord, .deref = derefDouble};
+  GetCallbacks c = {.scan = parseDoubleRecord, .deref = derefDouble, .type = DOUBLE};
   return storage_get(key, (void*)val, timestamp, size, &c);
 }
 
@@ -223,17 +248,48 @@ le_result_t storage_getString(const char* key,
                               char* val[],
                               uint64_t* timestamp,
                               size_t* size) {
-  GetCallbacks c = {.scan = parseStringRecord, .deref = derefString};
+  GetCallbacks c = {.scan = parseStringRecord, .deref = derefString, .type = STRING};
   return storage_get(key, (void*)val, timestamp, size, &c);
+}
+
+// TODO test this
+void parseDirList(const char* dirList, char* vals, StorageType* type) {
+  int n = strlen(dirList);
+  int lastSeparatorLocation = 0;
+  char* entrySep = ",";
+  char* keyTypeSep = ".";
+  char* entryToken = strtok(dirList, entrySep);
+  char* keyTypeToken;
+  int i = 0;
+  char keystr[500], typestr[100];
+  while(entryToken != NULL) {
+    keyTypeToken = strtok(entryToken, keyTypeSep);
+    // TODO die with magic numbers
+    while(keyTypeToken != NULL && i < 2) {
+      char* storage = i == 0 ? keystr : typestr;
+      sscanf(keyTypeToken, "%s", storage);
+      keyTypeToken = strtok(NULL, keyTypeSep);
+      i++
+    }
+    type[nScanned] = stringToStorageType(keystr);
+    strcat(vals, keystr);
+    i = 0;
+    entryToken = strtok(NULL, entrySep);
+  }
+
+  LE_INFO("vals str: %s", vals);
 }
 
 // Note that we need to perform a scan here
 // to avoid the risk of "zombie files"
-le_result_t storage_getAllKeys(char* key,
-                               char* val[],
-                               StorageType* type,
-                               size_t* size) {
-  return LE_OK;
+le_result_t storage_getAllKeys(char* vals, StorageType* type) {
+  char dirList[MAX_DIR_LIST_STR];
+  char dir[MAX_STR_SIZE];
+  getSeriesDir(dir);
+  le_result_t listRes = util_listDir(dir, dirList, MAX_DIR_LIST_STR);
+  parseDirList(dirList, vals, type);
+  LE_INFO("Series in dir %s: %s", dir, dirList);
+  return listRes;
 }
 
 COMPONENT_INIT {

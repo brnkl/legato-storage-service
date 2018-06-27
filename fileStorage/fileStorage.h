@@ -1,6 +1,10 @@
 #ifndef FILE_STORAGE_H
 #define FILE_STORAGE_H
 
+#define MAX_STR_SIZE 2048
+#define MAX_KEY_LEN 500
+#define MAX_DIR_LIST_STR (MAX_STR_SIZE + 1) * 100
+
 #include "legato.h"
 #include "interfaces.h"
 
@@ -28,9 +32,6 @@ LE_SHARED le_result_t storage_getDouble(const char* key,
                                         uint64_t* timestamp,
                                         size_t* size);
 
-LE_SHARED le_result_t storage_getString(const char* key,
-                                        char* val[],
-                                        uint64_t* timestamp,
-                                        size_t* size);
+LE_SHARED le_result_t storage_getAllKeys(char* vals, StorageType* types);
 
 #endif
