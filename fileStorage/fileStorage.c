@@ -253,42 +253,45 @@ le_result_t storage_getString(const char* key,
 }
 
 // TODO test this
-void parseDirList(const char* dirList, char* vals, StorageType* type) {
-  int n = strlen(dirList);
-  int lastSeparatorLocation = 0;
+void parseDirList(char* dirList, char* vals, StorageType* type, size_t* tSize) {
   char* entrySep = ",";
   char* keyTypeSep = ".";
-  char* entryToken = strtok(dirList, entrySep);
+  char* entryEnd;
+  char* keyTypeTokenEnd;
+  char* entryToken = strtok_r(dirList, entrySep, &entryEnd);
   char* keyTypeToken;
-  int i = 0;
+  int i = 0, nScanned = 0;
   char keystr[500], typestr[100];
   while(entryToken != NULL) {
-    keyTypeToken = strtok(entryToken, keyTypeSep);
+    LE_INFO("Entry token: %s", entryToken);
+    keyTypeToken = strtok_r(entryToken, keyTypeSep, &keyTypeTokenEnd);
     // TODO die with magic numbers
     while(keyTypeToken != NULL && i < 2) {
-      char* storage = i == 0 ? keystr : typestr;
+      LE_INFO("Key type token: %s", keyTypeToken);
+      char* storage = i++ == 0 ? keystr : typestr;
       sscanf(keyTypeToken, "%s", storage);
-      keyTypeToken = strtok(NULL, keyTypeSep);
-      i++
+      keyTypeToken = strtok_r(NULL, keyTypeSep, &keyTypeTokenEnd);
     }
-    type[nScanned] = stringToStorageType(keystr);
+    if (nScanned > 0) {
+      strcat(vals, ",");
+    }
+    type[nScanned++] = stringToStorageType(keystr);
     strcat(vals, keystr);
     i = 0;
-    entryToken = strtok(NULL, entrySep);
+    entryToken = strtok_r(NULL, entrySep, &entryEnd);
   }
-
-  LE_INFO("vals str: %s", vals);
+  *tSize = nScanned;
+  LE_INFO("vals str: %s, nScanned: %d", vals, nScanned);
 }
 
 // Note that we need to perform a scan here
 // to avoid the risk of "zombie files"
-le_result_t storage_getAllKeys(char* vals, StorageType* type) {
+le_result_t storage_getAllKeys(char* vals, StorageType* type, size_t* tSize) {
   char dirList[MAX_DIR_LIST_STR];
   char dir[MAX_STR_SIZE];
   getSeriesDir(dir);
   le_result_t listRes = util_listDir(dir, dirList, MAX_DIR_LIST_STR);
-  parseDirList(dirList, vals, type);
-  LE_INFO("Series in dir %s: %s", dir, dirList);
+  parseDirList(dirList, vals, type, tSize);
   return listRes;
 }
 
