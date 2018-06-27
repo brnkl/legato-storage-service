@@ -26,7 +26,7 @@ le_result_t brnkl_series_getInt(const char* key,
                                 size_t* size,
                                 uint64_t* timestamp,
                                 size_t* tSize) {
-  return LE_OK;
+  return storage_getInt(key, val, timestamp, size);
 }
 
 le_result_t brnkl_series_getDouble(const char* key,
@@ -34,21 +34,20 @@ le_result_t brnkl_series_getDouble(const char* key,
                                    size_t* size,
                                    uint64_t* timestamp,
                                    size_t* tSize) {
-  return LE_OK;
-}
-
-le_result_t brnkl_series_getString(const char* key,
-                                   char* val[],
-                                   size_t* size,
-                                   uint64_t* timestamp,
-                                   size_t* tSize) {
-  return LE_OK;
+  return storage_getDouble(key, val, timestamp, size);
 }
 
 le_result_t brnkl_series_clear(const char* key,
                                int32_t clearAll,
                                uint32_t* size) {
   return LE_OK;
+}
+
+le_result_t brnkl_series_getAllKeys(char* vals,
+                                    size_t size,
+                                    int32_t* types,
+                                    size_t* tSize) {
+  return storage_getAllKeys(vals, (StorageType*)types, tSize);
 }
 
 COMPONENT_INIT {
