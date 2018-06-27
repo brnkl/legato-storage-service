@@ -1,6 +1,7 @@
 DEFINE N_MAX_RECORDS = 1000;
 DEFINE MAX_KEY_SIZE = 500;
 DEFINE MAX_STR_SIZE = 2048;
+DEFINE MAX_STRLIST_SIZE = 2048;
 
 FUNCTION le_result_t recordInt(
   string key[MAX_KEY_SIZE] IN,
@@ -36,4 +37,9 @@ FUNCTION le_result_t clear(
   string key[MAX_KEY_SIZE] IN,
   int32 clearAll IN,
   uint32 size OUT
+);
+
+FUNCTION le_result_t getAllKeys(
+  string val[MAX_STRLIST_SIZE] OUT,
+  int32 types [N_MAX_RECORDS] OUT
 );
