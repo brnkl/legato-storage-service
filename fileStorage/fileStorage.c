@@ -62,7 +62,7 @@ void getSeriesPath(const char* key, char* res, StorageType type) {
   snprintf(res, MAX_STR_SIZE, SERIES_FILENAME, dir, key, typestr);
 }
 
-StorageType stringToStorageType(char* typestr) {
+int32_t stringToStorageType(char* typestr) {
   if(!strcmp(typestr, "int")) return INT;
   if(!strcmp(typestr, "double")) return DOUBLE;
   if(!strcmp(typestr, "string")) return STRING;
@@ -87,8 +87,6 @@ le_result_t storage_record(const char* key,
   char newRecord[MAX_STR_SIZE];
   size_t len = snprintf(newRecord, MAX_STR_SIZE, "%" PRId64 ",%s\n", timestamp,
                         formattedVal);
-
-  LE_INFO("Appending record to %s, (%s)", seriesPath, newRecord);
 
   ioutil_appendToFile(seriesPath, newRecord, sizeof(char), len);
   return LE_OK;
@@ -211,17 +209,19 @@ le_result_t storage_get(const char* key,
     }
     buf.st_size--;
   }
-  close(fd);
   ftruncate(fd, buf.st_size);
+  close(fd);
   if (*size > i) {
     *size = i;
   }
   return LE_OK;
 empty:
-  LE_ERROR("Tried to read an empty file");
+  *size = 0;
+  close(fd);
   return LE_UNAVAILABLE;
 ioError:
-  LE_ERROR("Failed on file descriptor");
+  *size = 0;
+  close(fd);
   return LE_IO_ERROR;
 }
 
@@ -252,8 +252,7 @@ le_result_t storage_getString(const char* key,
   return storage_get(key, (void*)val, timestamp, size, &c);
 }
 
-// TODO test this
-void parseDirList(char* dirList, char* vals, StorageType* type, size_t* tSize) {
+void parseDirList(char* dirList, char* vals, int32_t* type, size_t* tSize) {
   char* entrySep = ",";
   char* keyTypeSep = ".";
   char* entryEnd;
@@ -261,13 +260,12 @@ void parseDirList(char* dirList, char* vals, StorageType* type, size_t* tSize) {
   char* entryToken = strtok_r(dirList, entrySep, &entryEnd);
   char* keyTypeToken;
   int i = 0, nScanned = 0;
-  char keystr[500], typestr[100];
+  char entryCopy[600], keystr[500], typestr[100];
   while(entryToken != NULL) {
-    LE_INFO("Entry token: %s", entryToken);
-    keyTypeToken = strtok_r(entryToken, keyTypeSep, &keyTypeTokenEnd);
+    strncpy(entryCopy, entryToken, 600);
+    keyTypeToken = strtok_r(entryCopy, keyTypeSep, &keyTypeTokenEnd);
     // TODO die with magic numbers
     while(keyTypeToken != NULL && i < 2) {
-      LE_INFO("Key type token: %s", keyTypeToken);
       char* storage = i++ == 0 ? keystr : typestr;
       sscanf(keyTypeToken, "%s", storage);
       keyTypeToken = strtok_r(NULL, keyTypeSep, &keyTypeTokenEnd);
@@ -275,24 +273,23 @@ void parseDirList(char* dirList, char* vals, StorageType* type, size_t* tSize) {
     if (nScanned > 0) {
       strcat(vals, ",");
     }
-    type[nScanned++] = stringToStorageType(keystr);
+    type[nScanned++] = stringToStorageType(typestr);
     strcat(vals, keystr);
     i = 0;
     entryToken = strtok_r(NULL, entrySep, &entryEnd);
   }
   *tSize = nScanned;
-  LE_INFO("vals str: %s, nScanned: %d", vals, nScanned);
 }
 
 // Note that we need to perform a scan here
 // to avoid the risk of "zombie files"
-le_result_t storage_getAllKeys(char* vals, StorageType* type, size_t* tSize) {
+le_result_t storage_getAllKeys(char* vals, int32_t* type, size_t* tSize) {
   char dirList[MAX_DIR_LIST_STR];
   char dir[MAX_STR_SIZE];
   getSeriesDir(dir);
-  le_result_t listRes = util_listDir(dir, dirList, MAX_DIR_LIST_STR);
+  util_listDir(dir, dirList, MAX_DIR_LIST_STR);
   parseDirList(dirList, vals, type, tSize);
-  return listRes;
+  return LE_OK;
 }
 
 COMPONENT_INIT {

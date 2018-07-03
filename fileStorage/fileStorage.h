@@ -32,6 +32,6 @@ LE_SHARED le_result_t storage_getDouble(const char* key,
                                         uint64_t* timestamp,
                                         size_t* size);
 
-LE_SHARED le_result_t storage_getAllKeys(char* vals, StorageType* types, size_t* tSize);
+LE_SHARED le_result_t storage_getAllKeys(char* vals, int32_t* types, size_t* tSize);
 
 #endif
