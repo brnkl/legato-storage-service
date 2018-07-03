@@ -26,7 +26,9 @@ le_result_t brnkl_series_getInt(const char* key,
                                 size_t* size,
                                 uint64_t* timestamp,
                                 size_t* tSize) {
-  return storage_getInt(key, val, timestamp, size);
+  le_result_t r = storage_getInt(key, val, timestamp, size);
+  *tSize = *size;
+  return r;
 }
 
 le_result_t brnkl_series_getDouble(const char* key,
@@ -34,7 +36,9 @@ le_result_t brnkl_series_getDouble(const char* key,
                                    size_t* size,
                                    uint64_t* timestamp,
                                    size_t* tSize) {
-  return storage_getDouble(key, val, timestamp, size);
+  le_result_t r = storage_getDouble(key, val, timestamp, size);
+  *tSize = *size;
+  return r;
 }
 
 le_result_t brnkl_series_clear(const char* key,
@@ -47,9 +51,7 @@ le_result_t brnkl_series_getAllKeys(char* vals,
                                     size_t size,
                                     int32_t* types,
                                     size_t* tSize) {
-  return storage_getAllKeys(vals, (StorageType*)types, tSize);
+  return storage_getAllKeys(vals, types, tSize);
 }
 
-COMPONENT_INIT {
-  LE_INFO("YO");
-}
+COMPONENT_INIT {}
