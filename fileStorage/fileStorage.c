@@ -46,26 +46,30 @@ void getSeriesDir(char* res) {
 void getSeriesPath(const char* key, char* res, StorageType type) {
   char dir[MAX_STR_SIZE];
   char* typestr;
-  switch(type) {
+  switch (type) {
     case INT:
       typestr = "int";
-    break;
+      break;
     case DOUBLE:
       typestr = "double";
-    break;
+      break;
     case STRING:
       typestr = "string";
-    break;
+      break;
   }
   getSeriesDir(dir);
-  // build the path e.g /mnt/flash/userrw/sd/storage/series/pressure1.double.series
+  // build the path e.g
+  // /mnt/flash/userrw/sd/storage/series/pressure1.double.series
   snprintf(res, MAX_STR_SIZE, SERIES_FILENAME, dir, key, typestr);
 }
 
 int32_t stringToStorageType(char* typestr) {
-  if(!strcmp(typestr, "int")) return INT;
-  if(!strcmp(typestr, "double")) return DOUBLE;
-  if(!strcmp(typestr, "string")) return STRING;
+  if (!strcmp(typestr, "int"))
+    return INT;
+  if (!strcmp(typestr, "double"))
+    return DOUBLE;
+  if (!strcmp(typestr, "string"))
+    return STRING;
   return INT;
 }
 
@@ -237,7 +241,8 @@ le_result_t storage_getDouble(const char* key,
                               double* val,
                               uint64_t* timestamp,
                               size_t* size) {
-  GetCallbacks c = {.scan = parseDoubleRecord, .deref = derefDouble, .type = DOUBLE};
+  GetCallbacks c = {
+      .scan = parseDoubleRecord, .deref = derefDouble, .type = DOUBLE};
   return storage_get(key, (void*)val, timestamp, size, &c);
 }
 
@@ -248,7 +253,8 @@ le_result_t storage_getString(const char* key,
                               char* val[],
                               uint64_t* timestamp,
                               size_t* size) {
-  GetCallbacks c = {.scan = parseStringRecord, .deref = derefString, .type = STRING};
+  GetCallbacks c = {
+      .scan = parseStringRecord, .deref = derefString, .type = STRING};
   return storage_get(key, (void*)val, timestamp, size, &c);
 }
 
@@ -261,11 +267,11 @@ void parseDirList(char* dirList, char* vals, int32_t* type, size_t* tSize) {
   char* keyTypeToken;
   int i = 0, nScanned = 0;
   char entryCopy[600], keystr[500], typestr[100];
-  while(entryToken != NULL) {
+  while (entryToken != NULL) {
     strncpy(entryCopy, entryToken, 600);
     keyTypeToken = strtok_r(entryCopy, keyTypeSep, &keyTypeTokenEnd);
     // TODO die with magic numbers
-    while(keyTypeToken != NULL && i < 2) {
+    while (keyTypeToken != NULL && i < 2) {
       char* storage = i++ == 0 ? keystr : typestr;
       sscanf(keyTypeToken, "%s", storage);
       keyTypeToken = strtok_r(NULL, keyTypeSep, &keyTypeTokenEnd);
